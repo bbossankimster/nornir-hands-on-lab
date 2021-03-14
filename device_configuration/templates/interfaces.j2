@@ -1,8 +1,23 @@
+{# =========== Features ========= #}
+{%  for feature in host["features"]  %}
+feature {{ feature.name }}
+{% endfor %}
+{# =========== Hostname ========= #}
+{%  for hostname in host["about"]  %}
+hostname {{ hostname.caption }}
+{% endfor %}
+{# =========== VPC ========= #}
+{%  for vpc in host["features"]  %}
+vpc domain {{ hostname.domain }}
+peer-keepalive destination 1.1.1.2 source 1.1.1.1 vrf VRF_VPC-KEEPALIVE
+ role priority 10
+ system priority 100
+feature {{ feature.name }}
+{% endfor %}
 {% for interface in host["interfaces"] %}
 interface {{ interface.name }}{{ interface.port_slot }}
 {% if interface.unused is defined %}
 shutdown
-{% elif interface.vlan is defined %}
 switchport mode {{ interface.mode }}
 switchport access vlan {{ interface.vlan }}
 no shutdown

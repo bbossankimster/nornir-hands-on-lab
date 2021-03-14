@@ -36,7 +36,7 @@ def send_ping(task):
     )
 def main():
     print_title("Playbook to configure the network")
-    task = nr.run(task=send_ping)
+    task = nr.run(task=hostname_config)
     print_result(task)
 
 if __name__ == "__main__":

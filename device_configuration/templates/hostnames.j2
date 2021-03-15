@@ -1,4 +1,1 @@
-{# TEST #}
-{%  for hostname in host["about"]  %}
-hostname {{ hostname.caption }}
-{% endfor %}
+hostname {{ host.about.caption }}

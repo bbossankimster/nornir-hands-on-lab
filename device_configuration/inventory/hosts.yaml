@@ -7,22 +7,68 @@ SW1:
     tags:
       - ios 15
     about: 
-    - caption: Nexus1
+      caption: Nexus1
+      domain_name: my.corp.local
+      ntp1: 192.168.100.1
+      ntp2: 109.195.19.73
+      log_server:
+      severity: 5
+      facility: local9
     features:
     - name: vpc
     - name: lacp
     vpc:
-    - domain: 1
-      dest_ip: 192.168.100.202
-
-    interfaces:
+      domain: 1
+      dst: 192.168.100.202
+      src: 192.168.100.200
+      vrf: management
+      role_pri: 20
+      sys_pri: 100
+    vpc_peer_links:
+    - name: Ethernet
+      port_slot: 1/7
+    - name: Ethernet
+      port_slot: 1/8
+    vpc_member_links:
     - name: Ethernet
       port_slot: 1/1
-      to_server: 
+      description: server1_link
+      po_group: 1
     - name: Ethernet
       port_slot: 1/2
-      mode: access
-      vlan: 10
+      description: server1_link
+      po_group: 1
+    - name: Ethernet
+      port_slot: 1/3
+      description: server2_link
+      po_group: 2
+    - name: Ethernet
+      port_slot: 1/4
+      description: server2_link
+      po_group: 2
+    - name: Ethernet
+      port_slot: 1/5
+      description: server3_link
+      po_group: 3
+    - name: Ethernet
+      port_slot: 1/6
+      description: server3_link
+      po_group: 3
+    - name:  Port-Channel 
+      port_slot: 1
+      description: server1_link
+      vpc_id: 10
+      allowed_vlans: 10,21
+    - name:  Port-Channel 
+      port_slot: 2
+      description: server2_link
+      vpc_id: 10
+      allowed_vlans: 10,21
+    - name:  Port-Channel 
+      port_slot: 3
+      description: server3_link
+      vpc_id: 10
+      allowed_vlans: 10,21
   connection_options:
     netmiko:
        extras:
@@ -30,4 +76,83 @@ SW1:
     napalm:
        extras:
          optional_args:
-            transport: 'telnet'    
+            transport: 'telnet'
+SW2:
+  port: 23
+  hostname: 192.168.100.202
+  groups:
+    - nornir_labs
+  data:
+    tags:
+      - ios 15
+    about: 
+      caption: Nexus2
+      domain_name: my.corp.local
+      ntp1: 192.168.100.1
+      ntp2: 109.195.19.73
+      log_server:
+      severity: 5
+      facility: local9
+    features:
+    - name: vpc
+    - name: lacp
+    vpc:
+      domain: 1
+      dst: 192.168.100.202
+      src: 192.168.100.200
+      vrf: management
+      role_pri: 20
+      sys_pri: 100
+    vpc_peer_links:
+    - name: Ethernet
+      port_slot: 1/7
+    - name: Ethernet
+      port_slot: 1/8
+    vpc_member_links:
+    - name: Ethernet
+      port_slot: 1/1
+      description: server1_link
+      po_group: 1
+    - name: Ethernet
+      port_slot: 1/2
+      description: server1_link
+      po_group: 1
+    - name: Ethernet
+      port_slot: 1/3
+      description: server2_link
+      po_group: 2
+    - name: Ethernet
+      port_slot: 1/4
+      description: server2_link
+      po_group: 2
+    - name: Ethernet
+      port_slot: 1/5
+      description: server3_link
+      po_group: 3
+    - name: Ethernet
+      port_slot: 1/6
+      description: server3_link
+      po_group: 3
+    - name:  Port-Channel 
+      port_slot: 1
+      description: server1_link
+      vpc_id: 10
+      allowed_vlans: 10,21
+    - name:  Port-Channel 
+      port_slot: 2
+      description: server2_link
+      vpc_id: 10
+      allowed_vlans: 10,21
+    - name:  Port-Channel 
+      port_slot: 3
+      description: server3_link
+      vpc_id: 10
+      allowed_vlans: 10,21
+  connection_options:
+    netmiko:
+       extras:
+         device_type: 'cisco_ios_telnet'
+    napalm:
+       extras:
+         optional_args:
+            transport: 'telnet'

@@ -2,20 +2,56 @@
 {%  for feature in host["features"]  %}
 feature {{ feature.name }}
 {% endfor %}
-{# =========== Hostname ========= #}
-{%  for hostname in host["about"]  %}
-hostname {{ hostname.caption }}
-{% endfor %}
+{# =========== Hostname, NTP, DOMAIN ========= #}
+hostname {{ host.about.caption }}
+ip domain-name {{ host.about.domain_name }}
+ntp server {{ host.about.ntp1 }} prefer
+ntp server {{ host.about.ntp2 }}
+logging server {{ host.about.log_server }} {{ host.about.severity }} {{ host.about.facility }}
+{# ===========  ========= #}
 {# =========== VPC ========= #}
-{%  for vpc in host["features"]  %}
-vpc domain {{ hostname.domain }}
-peer-keepalive destination 1.1.1.2 source 1.1.1.1 vrf VRF_VPC-KEEPALIVE
- role priority 10
- system priority 100
-feature {{ feature.name }}
+vpc domain {{ host.vpc.domain }}
+peer-keepalive destination {{ host.vpc.dst }} source {{ host.vpc.src }} vrf {{ host.vpc.vrf }}
+role priority {{ host.vpc.role_pri }}
+system priority {{ host.vpc.sys_pri }}
+{# =========== VPC peer-links ========= #}
+{% for peer_links in host["vpc_peer_links"] %}
+interface {{ peer_links.name }}{{ peer_links.port_slot }}
+channel-group 100 mode active
+no shutdown
 {% endfor %}
-{% for interface in host["interfaces"] %}
-interface {{ interface.name }}{{ interface.port_slot }}
+{# ===========  ========= #}
+interface port-channel 100
+no shutdown
+switchport
+switchport mode trunk
+vpc peer-link
+{# ===========  ========= #}
+{# =========== VPC member-links ========= #}
+{% for member_links in host["vpc_member_links"] %}
+{% if member_links.vpc_id is not defined %}
+interface {{ member_links.name }}{{ member_links.port_slot }}
+channel-group {{ member_links.po_group }}  mode active
+description {{ member_links.description }}
+{% else %}
+interface {{ member_links.name }}{{ peer_links.port_slot }}
+switchport
+switchport mode trunk
+switchport trunk allowed vlan {{ interface.allowed_vlans }}
+vpc {{ member_links.vpc_id }}
+{% endif %}
+{% endfor %}
+{# ===========  ========= #}
+
+switchport mode trunk
+switchport trunk allowed vlan {{ interface.allowed_vlan }}
+switchport trunk encapsulation {{ interface.encapsulation }}
+switchport trunk native vlan {{ interface.native_vlan }}
+
+switchport {{ interface.negotiation }}
+no shutdown
+
+
 {% if interface.unused is defined %}
 shutdown
 switchport mode {{ interface.mode }}

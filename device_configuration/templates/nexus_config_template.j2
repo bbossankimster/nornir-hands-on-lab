@@ -2,12 +2,21 @@
 {%  for feature in host["features"]  %}
 feature {{ feature.name }}
 {% endfor %}
-{# =========== Hostname, NTP, DOMAIN ========= #}
+{# =========== Hostname, NTP, DOMAIN, syslog ========= #}
 hostname {{ host.about.caption }}
 ip domain-name {{ host.about.domain_name }}
 ntp server {{ host.about.ntp1 }} prefer
 ntp server {{ host.about.ntp2 }}
 logging server {{ host.about.log_server }} {{ host.about.severity }} {{ host.about.facility }}
+{# =========== vlans ========= #}
+vlan 10
+name {{ host.vlans.vlan10 }}
+vlan 21
+name {{ host.vlans.vlan21 }}
+vlan 31
+name {{ host.vlans.vlan31 }}
+vlan 32
+name {{ host.vlans.vlan32 }}
 {# ===========  ========= #}
 {# =========== VPC ========= #}
 vpc domain {{ host.vpc.domain }}
@@ -28,6 +37,7 @@ switchport mode trunk
 vpc peer-link
 {# ===========  ========= #}
 {# =========== VPC member-links ========= #}
+spanning-tree mode rapid-pvst
 {% for member_links in host["vpc_member_links"] %}
 {% if member_links.vpc_id is not defined %}
 interface {{ member_links.name }}{{ member_links.port_slot }}
@@ -38,59 +48,43 @@ interface {{ member_links.name }}{{ peer_links.port_slot }}
 switchport
 switchport mode trunk
 switchport trunk allowed vlan {{ interface.allowed_vlans }}
+spanning-tree port type edge trunk
 vpc {{ member_links.vpc_id }}
 {% endif %}
 {% endfor %}
-{# ===========  ========= #}
-
+{# =========== uplink ========= #}
+interface {{ host.uplink.name }}{{ host.uplink.port_slot }}
+switchport
 switchport mode trunk
-switchport trunk allowed vlan {{ interface.allowed_vlan }}
-switchport trunk encapsulation {{ interface.encapsulation }}
-switchport trunk native vlan {{ interface.native_vlan }}
-
-switchport {{ interface.negotiation }}
+switchport trunk allowed vlan {{ host.uplink.allowed_vlans }}
+description {{ host.uplink.description }}
+{# =========== svi21 and hsrp ========= #}
+interface vlan21
+ip address {{ host.svi21.address }} {{ host.svi21.mask }}
+no shut
+hsrp 21 
+preempt
+priority {{ host.svi21.hsrp_pri }}
+ip {{ host.svi21.hsrp_vip }}
 no shutdown
-
-
-{% if interface.unused is defined %}
-shutdown
-switchport mode {{ interface.mode }}
-switchport access vlan {{ interface.vlan }}
-no shutdown
-{% elif interface.allowed_vlan is defined and interface.negotiation is defined %}
-switchport trunk allowed vlan {{ interface.allowed_vlan }}
-switchport trunk encapsulation {{ interface.encapsulation }}
-switchport trunk native vlan {{ interface.native_vlan }}
-switchport mode {{ interface.mode }}
-switchport {{ interface.negotiation }}
-no shutdown
-{% elif interface.negotiation is defined %}
-switchport trunk encapsulation {{ interface.encapsulation }}
-switchport trunk native vlan {{ interface.native_vlan }}
-switchport mode {{ interface.mode }}
-switchport {{ interface.negotiation }}
-no shutdown
-{% elif interface.mode is defined and interface.allowed_vlan is defined %}
-switchport trunk allowed vlan {{ interface.allowed_vlan }}
-switchport trunk encapsulation {{ interface.encapsulation }}
-switchport trunk native vlan {{ interface.native_vlan }}
-switchport mode {{ interface.mode }}
-no shutdown
-{% elif interface.encapsulation is defined and interface.native_vlan is defined %}
-switchport trunk encapsulation {{ interface.encapsulation }}
-switchport trunk native vlan {{ interface.native_vlan }}
-switchport mode {{ interface.mode }}
-no shutdown
-{% elif interface.native_vlan is defined and interface.mode is defined %}
-switchport trunk native vlan {{ interface.native_vlan }}
-switchport mode {{ interface.mode }}
-no shutdown
-{% elif interface.native_vlan is defined and interface.allowed_vlan is defined %}
-switchport trunk native vlan {{ interface.native_vlan }}
-switchport trunk allowed vlan {{ interface.allowed_vlan }}
-no shutdown
-{% elif interface.ipv4_address is defined %}
-ip address {{ interface.ipv4_address }} {{ interface.ipv4_mask }}
-no shutdown   
+exit
+{# =========== svi_uplink ========= #}
+interface {{ host.svi_uplink.name }}
+ip address {{ host.svi_uplink.address }} {{ host.svi_uplink.mask }}
+no shut
+{# =========== bgp ========= #}
+router bgp {{ host.bgp.my_as }}
+neighbor {{ host.bgp.peer }} remote-as {{ host.bgp.peer_as }}
+address-family ipv4 unicast
+network {{ host.bgp.network }} {{ host.bgp.mask }}
+{# =========== bgp prepend ========= #}
+{% if host.bgp.prepend is defined %}
+access-list 10 permit 188.100.10.0 0.0.0.255
+route-map addPrepend permit 10
+match ip address 10
+set as-path prepend 500
+route-map addPrepend permit 20
+router bgp {{ host.bgp.my_as }}
+neighbor {{ host.bgp.peer }} route-map addPrepend out
 {% endif %}
-{% endfor %}
+{# =========== FINISH ========= #}

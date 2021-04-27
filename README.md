@@ -47,7 +47,7 @@ python devices_config.py
 
 <a name="Russian"></a> 
 
-# Nornir hands-on lab
+# Практическая работа с Nornir
 
 ## Описание
 
